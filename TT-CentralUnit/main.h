@@ -2,12 +2,13 @@
 
 #include <avr/interrupt.h>
 #include <avr/io.h>
-#include "utils.h"
 
-#include "A1001Display.h"
+#include "common/A1001Display.h"
+#include "common/timer0.h"
+#include "common/uart.h"
+#include "common/utils.h"
+
 #include "settings.h"
-#include "timer0.h"
-#include "uart.h"
 
 uint8_t score_myself = 0;
 uint8_t score_other = 0;
