@@ -148,6 +148,15 @@
     <Compile Include="common\A1001Display.h">
       <SubType>compile</SubType>
     </Compile>
+    <Compile Include="common\bit_manipulation.h">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="common\OneButton2.cpp">
+      <SubType>compile</SubType>
+    </Compile>
+    <Compile Include="common\OneButton2.h">
+      <SubType>compile</SubType>
+    </Compile>
     <Compile Include="common\timer0.cpp">
       <SubType>compile</SubType>
     </Compile>
