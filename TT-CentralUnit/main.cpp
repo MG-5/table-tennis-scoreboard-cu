@@ -1,13 +1,15 @@
 #include "main.h"
 
-OneButton button_p1_1(&PINA, 1);
-OneButton button_p1_2(&PINA, 2);
-
-OneButton button_p2_1(&PINC, 0);
-OneButton button_p2_2(&PINB, 3);
-
 volatile uint8_t buttonStates = 0b111111; // gespeicherte Zustände
 volatile uint8_t interruptFlags = 0;      // 0-p1_1	1-p1_2	2-p2_1	3-p2_2 4-CU_1 5-CU_2
+
+Player playerOne;
+Player playerTwo;
+
+States state_p1 = States::SCORE;
+States state_p2 = States::SCORE;
+Durations duration_p1 = Durations::INFINITIVE;
+Durations duration_p2 = Durations::INFINITIVE;
 
 int main(void)
 {
@@ -29,17 +31,7 @@ int main(void)
   PCMSK2 |= (1 << PCINT12);                                                // mask C0
 
   /* Button - associated functions */
-  button_p1_1.attachClick(playerOne_btn1_click);
-  button_p1_1.attachLongPressStart(playerOne_btn1_longPressStart);
-
-  button_p1_2.attachClick(playerOne_btn2_click);
-  button_p1_2.attachLongPressStart(playerOne_btn2_longPressStart);
-
-  button_p2_1.attachClick(playerTwo_btn1_click);
-  button_p2_1.attachLongPressStart(playerTwo_btn1_longPressStart);
-
-  button_p2_2.attachClick(playerTwo_btn2_click);
-  button_p2_2.attachLongPressStart(playerTwo_btn2_longPressStart);
+  buttons_init();
 
   DDRC |= LED_PIN;
   timer0_init();
@@ -50,72 +42,65 @@ int main(void)
   sei();
   bool test = false;
   uint32_t prevTime = 0;
+  uint32_t prevTime2 = 0;
 
   while (true)
   {
+    checkForButtonUpdates(interruptFlags);
 
-#pragma region checking button inputs
-    // check playerOne first button
-    if (button_p1_1.state != 0)
-      button_p1_1.tick();
-
-    if (check_bit(interruptFlags, 0))
+    if (millis() - prevTime2 >= 1000)
     {
-      clear_bit(interruptFlags, 0);
-      button_p1_1.tick();
+      test = !test;
+      prevTime2 = millis();
+
+      playerOne.clearScore();
+
+      if (test)
+        PORTC |= LED_PIN;
+      else
+        PORTC &= ~LED_PIN;
     }
 
-    // check playerOne second button
-    if (button_p1_2.state != 0)
-      button_p1_2.tick();
-
-    if (check_bit(interruptFlags, 1))
+    switch (state_p1)
     {
-      clear_bit(interruptFlags, 1);
-      button_p1_2.tick();
+    case States::SCORE:
+      showScoreline(playerOne.getScore(), playerTwo.getScore(), playerOne.digits);
+      break;
+
+    case States::SERVES:
+    {
+      if (playerOne.getServes() > 0)
+        showServes(true, playerOne.getServes() > 0, playerOne.digits);
+      else
+        showServes(false, playerTwo.getServes() > 0, playerOne.digits);
+    }
+    break;
+
+    case States::MESSAGE:
+    {
+      switch (duration_p1)
+      {
+      case Durations::INFINITIVE:
+        break;
+
+      case Durations::THREE_SECS:
+        break;
+
+      case Durations::FIVE_SEC5:
+
+        break;
+      }
+    }
+    break;
+
+    case States::ERROR:
+    {
+    }
+    break;
     }
 
-    // check playerTwo first button
-    if (button_p2_1.state != 0)
-      button_p2_1.tick();
-
-    if (check_bit(interruptFlags, 2))
-    {
-      clear_bit(interruptFlags, 2);
-      button_p2_1.tick();
-    }
-
-    // check playerTwo second button
-    if (button_p2_2.state != 0)
-      button_p2_2.tick();
-
-    if (check_bit(interruptFlags, 3))
-    {
-      clear_bit(interruptFlags, 3);
-      button_p2_2.tick();
-    }
-#pragma endregion
-
-    /*
-        if (millis() - prevTime2 >= 1000)
-        {
-          test = !test;
-          prevTime2 = millis();
-
-          if (test)
-            PORTC |= LED_PIN;
-          else
-            PORTC &= ~LED_PIN;
-        }*/
-
-    if (check_bit(PINC, 0))
-      PORTC |= LED_PIN;
-    else
-      PORTC &= ~LED_PIN;
-
-    // showScoreline(score_PlayerOne, score_PlayerTwo, digits_PlayerOne);
     // showScoreline(score_PlayerTwo, score_PlayerOne, digits_PlayerTwo);
-    showTemp();
+    // showTemp();
 
     if (millis() - prevTime >= 10)
     {
@@ -130,149 +115,21 @@ int main(void)
 void updateDisplayOne()
 {
   uart_putc(0x42);
-  uart_putc(digits_PlayerOne[0]);
-  uart_putc(digits_PlayerOne[1]);
-  uart_putc(digits_PlayerOne[2]);
-  uart_putc(digits_PlayerOne[3]);
-  uart_putc(digits_PlayerOne[4]);
+  uart_putc(playerOne.digits[0]);
+  uart_putc(playerOne.digits[1]);
+  uart_putc(playerOne.digits[2]);
+  uart_putc(playerOne.digits[3]);
+  uart_putc(playerOne.digits[4]);
 }
 
 void updateDisplayTwo()
 {
   uart1_putc(0x42);
-  uart1_putc(digits_PlayerTwo[0]);
-  uart1_putc(digits_PlayerTwo[1]);
-  uart1_putc(digits_PlayerTwo[2]);
-  uart1_putc(digits_PlayerTwo[3]);
-  uart1_putc(digits_PlayerTwo[4]);
-}
-
-void showScoreline(uint8_t left, uint8_t right, uint8_t (&digits)[5])
-{
-  uint8_t players[2] = {left, right};
-  digits[4] = true;
-
-  for (uint8_t i = 0; i <= 1; i++)
-  {
-    if (players[i] > 9)
-    {
-      digits[2 * i] = digitToSegment[players[i] / 10];
-      digits[2 * i + 1] = digitToSegment[players[i] % 10];
-    }
-    else if (players[i] <= 9)
-    {
-      if (i == 1)
-      {
-        digits[2 * i] = digitToSegment[players[i]];
-        digits[2 * i + 1] = 0;
-      }
-      else
-      {
-        digits[2 * i] = 0;
-        digits[2 * i + 1] = digitToSegment[players[i]];
-      }
-    }
-  }
-}
-
-void showServes(uint8_t serves, bool myself, uint8_t (&digits)[5])
-{
-  digits[0] = 0;
-  digits[1] = digitToSegment[0xA];
-
-  if (myself)
-    digits[2] = 0;
-  else
-    digits[2] = 64; // Minusstrich
-
-  digits[3] = digitToSegment[serves];
-  digits[4] = true;
-}
-
-void showTemp()
-{
-  uint16_t temp_adc = ADC_read_avg(TEMP_CHANNEL, 3); // Temperaturmessung
-  uint8_t value = truncf(adcToTemp(temp_adc));
-
-  if (value > 9)
-  {
-    digits_PlayerOne[0] = digitToSegment[value / 10];
-    digits_PlayerTwo[0] = digits_PlayerOne[0]; 
-
-    digits_PlayerOne[1] = digitToSegment[value % 10];
-    digits_PlayerTwo[1] = digits_PlayerOne[1];
-
-    digits_PlayerOne[2] = 99;
-    digits_PlayerTwo[2] = 99;
-
-    digits_PlayerOne[3] = digitToSegment[0xC];
-    digits_PlayerTwo[3] = digitToSegment[0xC];
-
-    digits_PlayerOne[4] = false;
-    digits_PlayerTwo[4] = false;
-  }
-  else if (value <= 9)
-  {
-    digits_PlayerOne[0] = 0;
-    digits_PlayerTwo[0] = 0;
-
-    digits_PlayerOne[1] = digitToSegment[value];
-    digits_PlayerTwo[1] = digits_PlayerOne[1];
-
-    digits_PlayerOne[2] = 99;
-    digits_PlayerTwo[2] = 99;
-
-    digits_PlayerOne[3] = digitToSegment[0xC];
-    digits_PlayerTwo[3] = digitToSegment[0xC];
-
-    digits_PlayerOne[4] = false;
-    digits_PlayerTwo[4] = false;
-  }
-}
-
-void playerOne_btn1_click()
-{
-  // TODO: add debounce 2 sec
-  if (score_PlayerOne < 21)
-    score_PlayerOne++;
-}
-
-void playerOne_btn1_longPressStart()
-{
-
-  /*
- if (score_PlayerOne > 0)
-   score_PlayerOne--;
-       */
-}
-
-void playerOne_btn2_click()
-{
-}
-
-void playerOne_btn2_longPressStart()
-{
-}
-
-void playerTwo_btn1_click()
-{
-  // TODO: add debounce 2 sec
-  if (score_PlayerTwo < 21)
-    score_PlayerTwo++;
-}
-
-void playerTwo_btn1_longPressStart()
-{
-  if (score_PlayerTwo > 0)
-    score_PlayerTwo--;
-}
-
-void playerTwo_btn2_click()
-{
-}
-
-void playerTwo_btn2_longPressStart()
-{
+  uart1_putc(playerTwo.digits[0]);
+  uart1_putc(playerTwo.digits[1]);
+  uart1_putc(playerTwo.digits[2]);
+  uart1_putc(playerTwo.digits[3]);
+  uart1_putc(playerTwo.digits[4]);
 }
 
 void ADC_init()
