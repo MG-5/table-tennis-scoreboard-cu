@@ -1,4 +1,5 @@
 #pragma once
+#include "enums.h"
 #include <avr/io.h>
 
 class Player
@@ -21,11 +22,13 @@ public:
   uint8_t decrementServes();
 
   void clearServes();
-  
+
   void refillServes();
-  
+
   uint8_t digits[5] = {0, 0, 0, 0, 0};
-  
+
+  IndividualStates state = IndividualStates::SCORE;
+
 private:
   uint8_t score = 0;
 

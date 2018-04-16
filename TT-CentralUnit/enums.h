@@ -1,16 +1,37 @@
 #pragma once
 
-enum class States
+enum class IndividualStates
 {
   SCORE,
   SERVES,
-  MESSAGE,
+  TEMP
+};
+
+enum class CommonlyStates
+{
+  STARTUP,
+  RANKING,
   ERROR
 };
 
-enum class Durations
+enum class Mode
 {
-  THREE_SECS,
-  FIVE_SEC5,
-  INFINITIVE
+  INDIVIDUAL,
+  COMMONLY
+};
+
+enum class Ranks
+{
+  NOBODY,
+  PLAYER_ONE,
+  PLAYER_TWO
+};
+
+enum class Errors
+{
+  NOTHING,
+  NO_CONN_DISP_P1,
+  NO_CONN_DISP_P2,
+  ACCU_WARN,
+  ACCU_CRITCIAL
 };

@@ -6,10 +6,14 @@ volatile uint8_t interruptFlags = 0;      // 0-p1_1	1-p1_2	2-p2_1	3-p2_2 4-CU_1 
 Player playerOne;
 Player playerTwo;
 
-States state_p1 = States::SCORE;
-States state_p2 = States::SCORE;
-Durations duration_p1 = Durations::INFINITIVE;
-Durations duration_p2 = Durations::INFINITIVE;
+uint8_t timeCount_p1 = 0;
+uint32_t prevTime_p1 = 0;
+uint8_t timeCount_p2 = 0;
+uint32_t prevTime_p2 = 0;
+
+CommonlyStates state_common = CommonlyStates::STARTUP;
+Mode currentMode = Mode::COMMONLY;
+Ranks currentRank = Ranks::NOBODY;
 
 int main(void)
 {
@@ -53,55 +57,119 @@ int main(void)
       test = !test;
       prevTime2 = millis();
 
-      playerOne.clearScore();
-
       if (test)
         PORTC |= LED_PIN;
       else
         PORTC &= ~LED_PIN;
     }
 
-    switch (state_p1)
+    switch (currentMode)
     {
-    case States::SCORE:
-      showScoreline(playerOne.getScore(), playerTwo.getScore(), playerOne.digits);
+    case Mode::INDIVIDUAL:
+    {
+      // player one
+      switch (playerOne.state)
+      {
+      case IndividualStates::SCORE:
+        showScoreline(playerOne.getScore(), playerTwo.getScore(), playerOne.digits);
+        break;
+
+      case IndividualStates::SERVES:
+      {
+        if (playerOne.getServes() > 0)
+          showServes(true, playerOne.getServes(), playerOne.digits);
+        else
+          showServes(false, playerTwo.getServes(), playerOne.digits);
+
+        if ((millis() - prevTime_p1) >= 1000)
+        {
+          prevTime_p1 = millis();
+
+          if (++timeCount_p1 >= 3)
+            playerOne.state = IndividualStates::SCORE;
+        }
+      }
       break;
 
-    case States::SERVES:
-    {
-      if (playerOne.getServes() > 0)
-        showServes(true, playerOne.getServes() > 0, playerOne.digits);
-      else
-        showServes(false, playerTwo.getServes() > 0, playerOne.digits);
-    }
-    break;
-
-    case States::MESSAGE:
-    {
-      switch (duration_p1)
+      case IndividualStates::TEMP:
       {
-      case Durations::INFINITIVE:
+        showTemp(playerOne.digits);
+      }
+      break;
+      }
+
+      switch (playerTwo.state)
+      {
+      case IndividualStates::SCORE:
+        showScoreline(playerTwo.getScore(), playerOne.getScore(), playerTwo.digits);
         break;
 
-      case Durations::THREE_SECS:
-        break;
+      case IndividualStates::SERVES:
+      {
+        if (playerTwo.getServes() > 0)
+          showServes(true, playerTwo.getServes(), playerTwo.digits);
+        else
+          showServes(false, playerOne.getServes(), playerTwo.digits);
 
-      case Durations::FIVE_SEC5:
+        if ((millis() - prevTime_p2) >= 1000)
+        {
+          prevTime_p2 = millis();
 
-        break;
+          if (++timeCount_p2 >= 3)
+            playerTwo.state = IndividualStates::SCORE;
+        }
+      }
+      break;
+
+      case IndividualStates::TEMP:
+      {
+        showTemp(playerTwo.digits);
+
+        if ((millis() - prevTime_p2) >= 1000)
+        {
+          prevTime_p2 = millis();
+
+          if (++timeCount_p2 >= 3)
+            playerTwo.state = IndividualStates::SCORE;
+        }
+      }
+      break;
       }
     }
     break;
 
-    case States::ERROR:
+    case Mode::COMMONLY:
     {
+      switch (state_common)
+      {
+      case CommonlyStates::STARTUP:
+      {
+        // check for connection
+        // startup animation
+      }
+      break;
+
+      case CommonlyStates::RANKING:
+      {
+        // switch between score and SIEG or FAIL
+      }
+      break;
+
+      case CommonlyStates::ERROR:
+      {
+        // return error code
+        // 11 - no connection to player_ones display
+        // 22 - no connection to player_ones display
+        // 33 - accu warning
+        // 99 - accu critical
+      }
+      break;
+      }
     }
     break;
     }
 
-    // showScoreline(score_PlayerTwo, score_PlayerOne, digits_PlayerTwo);
-    // showTemp();
-
+    // 100Hz update rate
     if (millis() - prevTime >= 10)
     {
       prevTime = millis();
@@ -110,6 +178,37 @@ int main(void)
       updateDisplayTwo();
     }
   }
+}
+
+void compareScores()
+{
+  uint8_t p1 = playerOne.getScore();
+  uint8_t p2 = playerTwo.getScore();
+
+  if (abs(p1 - p2) >= 2)
+  {
+    if (p1 >= 21 && p1 > p2)
+    {
+      currentRank = Ranks::PLAYER_ONE;
+      currentMode = Mode::COMMONLY;
+    }
+    else if (p2 >= 21 && p2 > p1)
+    {
+      currentRank = Ranks::PLAYER_TWO;
+      currentMode = Mode::COMMONLY;
+    }
+  }
+}
+void clearTimeVariables_p1()
+{
+  timeCount_p1 = 0;
+  prevTime_p1 = millis();
+}
+
+void clearTimeVariables_p2()
+{
+  timeCount_p2 = 0;
+  prevTime_p2 = millis();
 }
 
 void updateDisplayOne()

@@ -75,16 +75,19 @@ void playerOne_btn1_click()
 
 void playerOne_btn1_longPressStart()
 {
-
   playerOne.decrementScore();
 }
 
 void playerOne_btn2_click()
 {
+  clearTimeVariables_p1();
+  playerOne.state = IndividualStates::SERVES;
 }
 
 void playerOne_btn2_longPressStart()
 {
+  clearTimeVariables_p1();
+  playerOne.state = IndividualStates::TEMP;
 }
 
 void playerTwo_btn1_click()
@@ -100,8 +103,12 @@ void playerTwo_btn1_longPressStart()
 
 void playerTwo_btn2_click()
 {
+  clearTimeVariables_p2();
+  playerTwo.state = IndividualStates::SERVES;
 }
 
 void playerTwo_btn2_longPressStart()
 {
+  clearTimeVariables_p2();
+  playerTwo.state = IndividualStates::TEMP;
 }

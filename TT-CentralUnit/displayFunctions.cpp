@@ -2,9 +2,6 @@
 #include "common/A1001Display.h"
 #include "main.h"
 
-extern Player playerOne;
-extern Player playerTwo;
-
 void showScoreline(uint8_t left, uint8_t right, uint8_t (&digits)[5])
 {
   uint8_t players[2] = {left, right};
@@ -47,44 +44,25 @@ void showServes(bool myself, uint8_t serves, uint8_t (&digits)[5])
   digits[4] = true;
 }
 
-void showTemp()
+void showTemp(uint8_t (&digits)[5])
 {
   uint16_t temp_adc = ADC_read_avg(TEMP_CHANNEL, 3); // Temperaturmessung
   uint8_t value = truncf(adcToTemp(temp_adc));
 
   if (value > 9)
   {
-
-    playerOne.digits[0] = digitToSegment[value / 10];
-    playerTwo.digits[0] = playerOne.digits[0];
-
-    playerOne.digits[1] = digitToSegment[value % 10];
-    playerTwo.digits[1] = playerOne.digits[1];
-
-    playerOne.digits[2] = 99;
-    playerTwo.digits[2] = 99;
-
-    playerOne.digits[3] = digitToSegment[0xC];
-    playerTwo.digits[3] = digitToSegment[0xC];
-
-    playerOne.digits[4] = false;
-    playerTwo.digits[4] = false;
+    digits[0] = digitToSegment[value / 10];
+    digits[1] = digitToSegment[value % 10];
+    digits[2] = 99;
+    digits[3] = digitToSegment[0xC];
+    digits[4] = false;
   }
   else if (value <= 9)
   {
-    playerOne.digits[0] = 0;
-    playerTwo.digits[0] = 0;
-
-    playerOne.digits[1] = digitToSegment[value];
-    playerTwo.digits[1] = playerOne.digits[1];
-
-    playerOne.digits[2] = 99;
-    playerTwo.digits[2] = 99;
-
-    playerOne.digits[3] = digitToSegment[0xC];
-    playerTwo.digits[3] = digitToSegment[0xC];
-
-    playerOne.digits[4] = false;
-    playerTwo.digits[4] = false;
+    digits[0] = 0;
+    digits[1] = digitToSegment[value];
+    digits[2] = 99;
+    digits[3] = digitToSegment[0xC];
+    digits[4] = false;
   }
 }

@@ -2,6 +2,7 @@
 
 #include <avr/interrupt.h>
 #include <avr/io.h>
+#include <stdlib.h>
 
 #include "common/A1001Display.h"
 #include "common/bit_manipulation.h"
@@ -14,6 +15,10 @@
 #include "enums.h"
 #include "players.h"
 #include "settings.h"
+
+void clearTimeVariables_p1();
+
+void clearTimeVariables_p2();
 
 void updateDisplayOne();
 
