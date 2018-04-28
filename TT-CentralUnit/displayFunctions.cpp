@@ -66,3 +66,48 @@ void showTemp(uint8_t (&digits)[5])
     digits[4] = false;
   }
 }
+
+void showError(Errors error, uint8_t (&p1)[5], uint8_t (&p2)[5])
+{
+  uint8_t errorMsg[5] = {0, digitToSegment[0xE], 64, 64, true};
+
+  switch (error)
+  {
+  case Errors::NOTHING:
+    break;
+
+  case Errors::NO_CONN_DISP_P1:
+  {
+    errorMsg[2] = digitToSegment[1];
+    errorMsg[3] = digitToSegment[1];
+  }
+  break;
+
+  case Errors::NO_CONN_DISP_P2:
+  {
+    errorMsg[2] = digitToSegment[2];
+    errorMsg[3] = digitToSegment[2];
+  }
+  break;
+
+  case Errors::ACCU_WARN:
+  {
+    errorMsg[2] = digitToSegment[3];
+    errorMsg[3] = digitToSegment[3];
+  }
+  break;
+
+  case Errors::ACCU_CRITCIAL:
+  {
+    errorMsg[2] = digitToSegment[9];
+    errorMsg[3] = digitToSegment[9];
+  }
+  break;
+  }
+
+  for (uint8_t i = 0; i < 5; i++)
+  {
+    p1[i] = errorMsg[i];
+    p2[i] = errorMsg[i];
+  }
+}

@@ -1,19 +1,24 @@
 #include "main.h"
 
-volatile uint8_t buttonStates = 0b111111; // gespeicherte Zustände
+volatile uint8_t buttonStates = 0b111111; // gespeicherte Zustaende
 volatile uint8_t interruptFlags = 0;      // 0-p1_1	1-p1_2	2-p2_1	3-p2_2 4-CU_1 5-CU_2
 
 Player playerOne;
 Player playerTwo;
 
+// use for player one and common
 uint8_t timeCount_p1 = 0;
 uint32_t prevTime_p1 = 0;
+
+// use only for player two
 uint8_t timeCount_p2 = 0;
 uint32_t prevTime_p2 = 0;
 
-CommonlyStates state_common = CommonlyStates::STARTUP;
+CommonlyStates currentState_common = CommonlyStates::STARTUP;
 Mode currentMode = Mode::COMMONLY;
+Errors currentError = Errors::NOTHING;
 Ranks currentRank = Ranks::NOBODY;
+ShowMode currentShowMode = ShowMode::MODE1;
 
 int main(void)
 {
@@ -63,111 +68,7 @@ int main(void)
         PORTC &= ~LED_PIN;
     }
 
-    switch (currentMode)
-    {
-    case Mode::INDIVIDUAL:
-    {
-      // player one
-      switch (playerOne.state)
-      {
-      case IndividualStates::SCORE:
-        showScoreline(playerOne.getScore(), playerTwo.getScore(), playerOne.digits);
-        break;
-
-      case IndividualStates::SERVES:
-      {
-        if (playerOne.getServes() > 0)
-          showServes(true, playerOne.getServes(), playerOne.digits);
-        else
-          showServes(false, playerTwo.getServes(), playerOne.digits);
-
-        if ((millis() - prevTime_p1) >= 1000)
-        {
-          prevTime_p1 = millis();
-
-          if (++timeCount_p1 >= 3)
-            playerOne.state = IndividualStates::SCORE;
-        }
-      }
-      break;
-
-      case IndividualStates::TEMP:
-      {
-        showTemp(playerOne.digits);
-      }
-      break;
-      }
-
-      switch (playerTwo.state)
-      {
-      case IndividualStates::SCORE:
-        showScoreline(playerTwo.getScore(), playerOne.getScore(), playerTwo.digits);
-        break;
-
-      case IndividualStates::SERVES:
-      {
-        if (playerTwo.getServes() > 0)
-          showServes(true, playerTwo.getServes(), playerTwo.digits);
-        else
-          showServes(false, playerOne.getServes(), playerTwo.digits);
-
-        if ((millis() - prevTime_p2) >= 1000)
-        {
-          prevTime_p2 = millis();
-
-          if (++timeCount_p2 >= 3)
-            playerTwo.state = IndividualStates::SCORE;
-        }
-      }
-      break;
-
-      case IndividualStates::TEMP:
-      {
-        showTemp(playerTwo.digits);
-
-        if ((millis() - prevTime_p2) >= 1000)
-        {
-          prevTime_p2 = millis();
-
-          if (++timeCount_p2 >= 3)
-            playerTwo.state = IndividualStates::SCORE;
-        }
-      }
-      break;
-      }
-    }
-    break;
-
-    case Mode::COMMONLY:
-    {
-      switch (state_common)
-      {
-      case CommonlyStates::STARTUP:
-      {
-        // check for connection
-        // startup animation
-      }
-      break;
-
-      case CommonlyStates::RANKING:
-      {
-        // switch between score and SIEG or FAIL
-      }
-      break;
-
-      case CommonlyStates::ERROR:
-      {
-        // return error code
-        // 11 - no connection to player_ones display
-        // 22 - no connection to player_ones display
-        // 33 - accu warning
-        // 99 - accu critical
-      }
-      break;
-      }
-    }
-    break;
-    }
+    processCurrentState();
 
     // 100Hz update rate
     if (millis() - prevTime >= 10)
@@ -178,6 +79,205 @@ int main(void)
       updateDisplayTwo();
     }
   }
+}
+
+inline void processCurrentState()
+{
+  switch (currentMode)
+  {
+  case Mode::INDIVIDUAL:
+  {
+    // player one
+    switch (playerOne.state)
+    {
+    case IndividualStates::SCORE:
+      showScoreline(playerOne.getScore(), playerTwo.getScore(), playerOne.digits);
+      break;
+
+    case IndividualStates::SERVES:
+    {
+      if (playerOne.getServes() > 0)
+        showServes(true, playerOne.getServes(), playerOne.digits);
+      else
+        showServes(false, playerTwo.getServes(), playerOne.digits);
+
+      if ((millis() - prevTime_p1) >= 1000)
+      {
+        prevTime_p1 = millis();
+
+        if (++timeCount_p1 > 3)
+          playerOne.state = IndividualStates::SCORE;
+      }
+    }
+    break;
+
+    case IndividualStates::TEMP:
+    {
+      showTemp(playerOne.digits);
+    }
+    break;
+    }
+
+    // player two
+    switch (playerTwo.state)
+    {
+    case IndividualStates::SCORE:
+      showScoreline(playerTwo.getScore(), playerOne.getScore(), playerTwo.digits);
+      break;
+
+    case IndividualStates::SERVES:
+    {
+      if (playerTwo.getServes() > 0)
+        showServes(true, playerTwo.getServes(), playerTwo.digits);
+      else
+        showServes(false, playerOne.getServes(), playerTwo.digits);
+
+      if ((millis() - prevTime_p2) >= 1000)
+      {
+        prevTime_p2 = millis();
+
+        if (++timeCount_p2 >= 3)
+          playerTwo.state = IndividualStates::SCORE;
+      }
+    }
+    break;
+
+    case IndividualStates::TEMP:
+    {
+      showTemp(playerTwo.digits);
+
+      if ((millis() - prevTime_p2) >= 1000)
+      {
+        prevTime_p2 = millis();
+
+        if (++timeCount_p2 > 3)
+          playerTwo.state = IndividualStates::SCORE;
+      }
+    }
+    break;
+    }
+  }
+  break;
+
+  case Mode::COMMONLY:
+  {
+    switch (currentState_common)
+    {
+    case CommonlyStates::STARTUP:
+    {
+      // check for connection
+      // startup animation
+    }
+    break;
+
+    case CommonlyStates::RANKING:
+    {
+      if (currentShowMode == ShowMode::MODE1)
+      {
+        if (currentRank == Ranks::PLAYER_ONE)
+        {
+          // SIEG for p1
+          for (uint8_t i = 0; i < 5; i++)
+            playerOne.digits[i] = SIEG_SEGMENTS[i];
+
+          // FAIL for p2
+          for (uint8_t i = 0; i < 5; i++)
+            playerTwo.digits[i] = FAIL_SEGMENTS[i];
+        }
+        else if (currentRank == Ranks::PLAYER_TWO)
+        {
+          // FAIL for p1
+          for (uint8_t i = 0; i < 5; i++)
+            playerOne.digits[i] = FAIL_SEGMENTS[i];
+
+          // SIEG for p2
+          for (uint8_t i = 0; i < 5; i++)
+            playerTwo.digits[i] = SIEG_SEGMENTS[i];
+        }
+      }
+      else
+      {
+        showScoreline(playerOne.getScore(), playerTwo.getScore(), playerOne.digits);
+        showScoreline(playerTwo.getScore(), playerOne.getScore(), playerTwo.digits);
+      }
+    }
+    break;
+
+      // switch between score and SIEG or FAIL
+      if ((millis() - prevTime_p1) >= 1000)
+      {
+        prevTime_p1 = millis();
+
+        if (currentShowMode == ShowMode::MODE1)
+          currentShowMode = ShowMode::MODE2;
+        else
+          currentShowMode = ShowMode::MODE1;
+      }
+
+    case CommonlyStates::ERROR:
+    {
+      // return error code
+      // 11 - no connection to player_ones display
+      // 22 - no connection to player_ones display
+      // 33 - accu warning
+      // 99 - accu critical
+
+      switch (currentError)
+      {
+      case Errors::NOTHING:
+        resetToScoreMode();
+        break;
+
+      case Errors::NO_CONN_DISP_P1:
+      case Errors::NO_CONN_DISP_P2:
+      case Errors::ACCU_WARN:
+      case Errors::ACCU_CRITCIAL:
+      {
+        if (timeCount_p1 > 10) // 5 sec, every 500ms count increment
+          resetToScoreMode();
+      }
+      break;
+      }
+
+      // render error code
+      if (currentShowMode == ShowMode::MODE1)
+        showError(currentError, playerOne.digits, playerTwo.digits);
+      else
+      {
+        uint8_t errorMsg[5] = {0, 0, 0, 0, false};
+        for (uint8_t i = 0; i < 5; i++)
+        {
+          playerOne.digits[i] = errorMsg[i];
+          playerTwo.digits[i] = errorMsg[i];
+        }
+      }
+
+      // switching
+      if ((millis() - prevTime_p1) >= 500)
+      {
+        prevTime_p1 = millis();
+        timeCount_p1++;
+
+        if (currentShowMode == ShowMode::MODE1)
+          currentShowMode = ShowMode::MODE2;
+        else
+          currentShowMode = ShowMode::MODE1;
+      }
+    }
+    break;
+    }
+  }
+  break;
+  }
+}
+
+void resetToScoreMode()
+{
+  currentMode = Mode::INDIVIDUAL;
+  playerOne.state = IndividualStates::SCORE;
+  playerTwo.state = IndividualStates::SCORE;
+
+  clearTimeVariables();
 }
 
 void compareScores()
@@ -191,11 +291,13 @@ void compareScores()
     {
       currentRank = Ranks::PLAYER_ONE;
       currentMode = Mode::COMMONLY;
+      clearTimeVariables();
     }
     else if (p2 >= 21 && p2 > p1)
     {
       currentRank = Ranks::PLAYER_TWO;
       currentMode = Mode::COMMONLY;
+      clearTimeVariables();
     }
   }
 }
@@ -209,6 +311,12 @@ void clearTimeVariables_p2()
 {
   timeCount_p2 = 0;
   prevTime_p2 = millis();
+}
+
+void clearTimeVariables()
+{
+  clearTimeVariables_p1();
+  clearTimeVariables_p2();
 }
 
 void updateDisplayOne()

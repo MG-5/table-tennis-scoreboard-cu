@@ -16,9 +16,17 @@
 #include "players.h"
 #include "settings.h"
 
+inline void processCurrentState();
+
+void resetToScoreMode();
+
+void compareScore();
+
 void clearTimeVariables_p1();
 
 void clearTimeVariables_p2();
+
+void clearTimeVariables();
 
 void updateDisplayOne();
 

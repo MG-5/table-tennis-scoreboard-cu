@@ -27,6 +27,12 @@ enum class Ranks
   PLAYER_TWO
 };
 
+enum class ShowMode
+{
+  MODE1,
+  MODE2
+};
+
 enum class Errors
 {
   NOTHING,
