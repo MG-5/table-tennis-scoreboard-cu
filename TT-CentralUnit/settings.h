@@ -10,3 +10,5 @@
 const unsigned char SIEG_SEGMENTS[5] = {0b01101101, 0b00000110, 0b01111001, 0b01111101, false};
 const unsigned char FAIL_SEGMENTS[5] = {0b01110001, 0b01110111, 0b00000110, 0b00111000, false};
 const unsigned char EMPTY_SEGMENTS[5] = {0, 0, 0, 0, false};
+
+const unsigned char HALLO[5] = {118, 119, 56, 56, 63};

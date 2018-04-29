@@ -208,7 +208,7 @@ inline void processCurrentState()
 
           if (connected_p1 && connected_p2)
           {
-            // TODO: startup animation
+            startupSequence();
 
             currentMode = Mode::COMMONLY;
             currentState_common = CommonlyStates::WAITING;
@@ -329,6 +329,11 @@ inline void processCurrentState()
 
             case Errors::NO_CONN_DISP_P1:
             case Errors::NO_CONN_DISP_P2:
+            {
+              // check connection
+            }
+            break;
+
             case Errors::ACCU_WARN:
             case Errors::ACCU_CRITCIAL:
             {
