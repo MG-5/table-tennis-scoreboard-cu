@@ -25,3 +25,7 @@ void playerTwo_btn1_longPressStart();
 void playerTwo_btn2_click();
 
 void playerTwo_btn2_longPressStart();
+
+void centralUnit_btn1_click();
+
+void centralUnit_btn1_longPressStart();

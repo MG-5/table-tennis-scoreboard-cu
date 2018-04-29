@@ -10,6 +10,7 @@ enum class IndividualStates
 enum class CommonlyStates
 {
   STARTUP,
+  WAITING,
   RANKING,
   ERROR
 };
@@ -40,4 +41,11 @@ enum class Errors
   NO_CONN_DISP_P2,
   ACCU_WARN,
   ACCU_CRITCIAL
+};
+
+enum class ServesPlayer
+{
+  NOBODY,
+  PLAYERONE,
+  PLAYERTWO
 };

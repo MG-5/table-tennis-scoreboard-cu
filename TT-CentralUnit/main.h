@@ -20,7 +20,7 @@ inline void processCurrentState();
 
 void resetToScoreMode();
 
-void compareScore();
+void compareScores();
 
 void clearTimeVariables_p1();
 
