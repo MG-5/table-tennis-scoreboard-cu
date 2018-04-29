@@ -4,7 +4,6 @@
 #include <avr/io.h>
 #include <stdlib.h>
 
-#include "common/A1001Display.h"
 #include "common/bit_manipulation.h"
 #include "common/timer0.h"
 #include "common/uart.h"
