@@ -1,137 +1,6 @@
 #include "displayFunctions.h"
 #include "main.h"
 
-extern Player playerOne;
-extern Player playerTwo;
-
-void startupSequence()
-{
-  const uint8_t timePassed = 10 * 8;
-  const uint8_t sequence_length = 15;
-  const uint8_t sequence[sequence_length] = {1, 2, 4, 8, 16, 32, 64, 66, 67, 99, 115, 123, 127, 255, 0};
-  uint32_t prevTimeStartup = millis();
-  uint16_t timeCount = 0;
-
-  uint8_t j = 0;
-  timeCount = 0;
-
-  while (j < sequence_length)
-  {
-    for (uint8_t k = 0; k < 4; k++)
-    {
-      playerOne.digits[k] = sequence[j];
-      playerTwo.digits[k] = sequence[j];
-    }
-
-    if (j == 13)
-    {
-      playerOne.digits[4] = true;
-      playerTwo.digits[4] = true;
-    }
-    else
-    {
-      playerOne.digits[4] = false;
-      playerTwo.digits[4] = false;
-    }
-
-    timeCount = 0;
-
-    while (timeCount < timePassed)
-    {
-
-      // 100Hz
-      if (millis() - prevTimeStartup >= 10)
-      {
-        prevTimeStartup = millis();
-        updateDisplayOne();
-        updateDisplayTwo();
-
-        uart_getc();
-        uart1_getc();
-
-        // TODO:
-        // uart_clearBuffer();
-        // uart1_clearBuffer();
-
-        timeCount += 10;
-      }
-    }
-    j++;
-  }
-
-  timeCount = 0;
-
-  while (timeCount < 100)
-  {
-    // 100Hz
-    if (millis() - prevTimeStartup >= 10)
-    {
-      prevTimeStartup = millis();
-      updateDisplayOne();
-      updateDisplayTwo();
-
-      uart_getc();
-      uart1_getc();
-      // TODO:
-      // uart_clearBuffer();
-      // uart1_clearBuffer();
-
-      timeCount += 10;
-    }
-  }
-
-  // print running "HALLO"
-  const uint8_t halLength = 5;
-  uint8_t idxHal = 0;
-  bool running = true;
-
-  while (running)
-  {
-    for (uint8_t k = 0; k < 3; k++)
-    {
-      playerOne.digits[k] = playerOne.digits[k + 1];
-      playerTwo.digits[k] = playerTwo.digits[k + 1];
-    }
-
-    if (idxHal < halLength)
-    {
-      playerOne.digits[3] = HALLO[idxHal];
-      playerTwo.digits[3] = HALLO[idxHal];
-    }
-    else if (idxHal < halLength + 4)
-    {
-      playerOne.digits[3] = 0;
-      playerTwo.digits[3] = 0;
-    }
-    else
-      running = false;
-
-    idxHal++;
-    timeCount = 0;
-    prevTimeStartup = millis();
-
-    while (timeCount < 175)
-    {
-      // 100Hz
-      if (millis() - prevTimeStartup >= 10)
-      {
-        prevTimeStartup = millis();
-        updateDisplayOne();
-        updateDisplayTwo();
-
-        uart_getc();
-        uart1_getc();
-
-        // TODO:
-        // uart_clearBuffer();
-        // uart1_clearBuffer();
-
-        timeCount += 10;
-      }
-    }
-  }
-}
-
 void showScoreline(uint8_t left, uint8_t right, uint8_t (&digits)[5])
 {
   uint8_t players[2] = {left, right};
@@ -207,37 +76,23 @@ void showError(Errors error, uint8_t (&p1)[5], uint8_t (&p2)[5])
       break;
 
     case Errors::NO_CONN_DISP_P1:
-    {
-      errorMsg[2] = digitToSegment[1];
-      errorMsg[3] = digitToSegment[1];
-    }
-    break;
+      errorMsg[2] = errorMsg[3] = digitToSegment[1];
+      break;
 
     case Errors::NO_CONN_DISP_P2:
-    {
-      errorMsg[2] = digitToSegment[2];
-      errorMsg[3] = digitToSegment[2];
-    }
-    break;
+      errorMsg[2] = errorMsg[3] = digitToSegment[2];
+      break;
 
     case Errors::ACCU_WARN:
     {
-      errorMsg[2] = digitToSegment[3];
-      errorMsg[3] = digitToSegment[3];
-    }
-    break;
-
-    case Errors::ACCU_CRITCIAL:
-    {
-      errorMsg[2] = digitToSegment[9];
-      errorMsg[3] = digitToSegment[9];
+      errorMsg[0] = digitToSegment[0xA];
+      errorMsg[1] = digitToSegment[0xC];
+      errorMsg[2] = digitToSegment[0xC];
+      errorMsg[3] = 62; //U
     }
     break;
   }
 
   for (uint8_t i = 0; i < 5; i++)
-  {
-    p1[i] = errorMsg[i];
-    p2[i] = errorMsg[i];
-  }
+    p1[i] = p2[i] = errorMsg[i];
 }

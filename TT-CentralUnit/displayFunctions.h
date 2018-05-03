@@ -27,8 +27,6 @@ const uint8_t digitToSegment[] = {
     0b01110001  // F
 };
 
-void startupSequence();
-
 void showScoreline(uint8_t left, uint8_t right, uint8_t (&digits)[5]);
 
 void showServes(bool myself, uint8_t serves, uint8_t (&digits)[5]);

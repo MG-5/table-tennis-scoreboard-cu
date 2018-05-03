@@ -1,30 +1,38 @@
 #include "main.h"
 
 volatile uint8_t buttonStates = 0b111111; // gespeicherte Zustaende
-volatile uint8_t interruptFlags = 0;      // 0 - p1_1
-                                          // 1 - p1_2
-                                          // 2 - p2_1
-                                          // 3 - p2_2
-                                          // 4 - CU_1
-                                          // 5 - CU_2
+volatile uint8_t interruptFlags = 0;      // 0 - p1_1	1 - p1_2
+                                          // 2 - p2_1	3 - p2_2
+                                          // 4 - CU_1	5 - CU_2
 
 Player playerOne;
 Player playerTwo;
 
-// use for player one and common
+// display connection
+uint32_t displayOneLastResponse = 0;
+uint32_t displayTwoLastResponse = 0;
+bool displayOneConnection = false;
+bool displayTwoConnection = false;
+
+// time stuff - use for player one and common
 uint8_t timeCount_p1 = 0;
 uint32_t prevTime_p1 = 0;
 
-// use only for player two
+// time stuff - use only for player two
 uint8_t timeCount_p2 = 0;
 uint32_t prevTime_p2 = 0;
 
-CommonlyStates currentState_common = CommonlyStates::STARTUP;
+// states
+CommonlyStates currentState_common = CommonlyStates::STARTUP_SEQ;
 Mode currentMode = Mode::COMMONLY;
 Errors currentError = Errors::NOTHING;
 Ranks currentRank = Ranks::NOBODY;
 ShowMode currentShowMode = ShowMode::MODE1;
 ServesPlayer currentPlayer = ServesPlayer::NOBODY;
+
+// previous states
+CommonlyStates prevState_common = CommonlyStates::STARTUP_SEQ;
+Mode prevMode = Mode::COMMONLY;
 
 int main(void)
 {
@@ -48,34 +56,31 @@ int main(void)
   ADC_init();
 
   sei();
-  bool test = false;
+
   uint32_t prevTime = 0;
-  uint32_t prevTime2 = 0;
 
   // wait for displays starting
   wait_ms(50);
+  displayOneLastResponse = displayTwoLastResponse = millis();
 
   while (true)
   {
     checkForButtonUpdates(interruptFlags);
 
-    /*
-if (millis() - prevTime2 >= 1000)
-{
-  test = !test;
-  prevTime2 = millis();
+    // clang-format off
+	/*
+    if (millis() - prevTime2 >= 1000)
+    {
+      test = !test;
+      prevTime2 = millis();
 
-  if (test)
-    PORTC |= LED_PIN;
-    else
-    PORTC &= ~LED_PIN;
-}
-    */
-
-    if (check_bit(PINA, 4))
-      PORTC |= LED_PIN;
-    else
-      PORTC &= ~LED_PIN;
+      if (test)
+        PORTC |= LED_PIN;
+      else
+        PORTC &= ~LED_PIN;
+    }
+	*/
+    // clang-format on
 
     processCurrentState();
 
@@ -86,6 +91,46 @@ if (millis() - prevTime2 >= 1000)
 
       updateDisplayOne();
       updateDisplayTwo();
+    }
+
+    if (uart_getc() == ANSWER_CODE)
+    {
+      displayOneLastResponse = millis();
+      displayOneConnection = true;
+    }
+
+    if (uart1_getc() == ANSWER_CODE)
+    {
+      displayTwoLastResponse = millis();
+      displayTwoConnection = true;
+    }
+
+    // connection to display one lost
+    if (displayOneConnection && millis() - displayOneLastResponse >= 30)
+    {
+      displayOneConnection = false;
+      prevMode = currentMode;
+      prevState_common = currentState_common;
+
+      currentMode = Mode::COMMONLY;
+      currentState_common = CommonlyStates::ERROR;
+      currentError = Errors::NO_CONN_DISP_P1;
+      currentShowMode = ShowMode::MODE1;
+      clearTimeVariables();
+    }
+
+    // connection to display two lost
+    if (displayTwoConnection && millis() - displayTwoLastResponse >= 30)
+    {
+      displayTwoConnection = false;
+      prevMode = currentMode;
+      prevState_common = currentState_common;
+
+      currentMode = Mode::COMMONLY;
+      currentState_common = CommonlyStates::ERROR;
+      currentError = Errors::NO_CONN_DISP_P2;
+      currentShowMode = ShowMode::MODE1;
+      clearTimeVariables();
     }
   }
 }
@@ -180,56 +225,62 @@ inline void processCurrentState()
     {
       switch (currentState_common)
       {
-        case CommonlyStates::STARTUP:
+        case CommonlyStates::STARTUP_SEQ:
         {
-          bool connected_p1 = false;
-          bool connected_p2 = false;
-          uint8_t attemptsCount = 0;
-
-          // connection request
-          while ((!connected_p1 || !connected_p2) && attemptsCount < 5)
+          if (millis() - prevTime_p1 >= 80)
           {
-            uart_putc(RQ_CODE);
-            uart1_putc(RQ_CODE);
+            prevTime_p1 = millis();
 
-            wait_ms(10);
+            if (timeCount_p1 < SEQ_LENGTH)
+            {
+              for (uint8_t k = 0; k < 4; k++)
+                playerOne.digits[k] = playerTwo.digits[k] = STARTUP_SEQ[timeCount_p1];
 
-            uint16_t c_p1 = uart_getc();
-            uint16_t c_p2 = uart1_getc();
+              playerOne.digits[4] = playerTwo.digits[4] = (timeCount_p1 == 13);
 
-            connected_p1 = (c_p1 == ANSWER_CODE);
-            connected_p2 = (c_p2 == ANSWER_CODE);
-
-            if (connected_p1 && connected_p2)
+              timeCount_p1++;
+            }
+            else
+            {
+              currentState_common = CommonlyStates::STARTUP_HELLO;
+              clearTimeVariables_p1();
               break;
-
-            attemptsCount++;
+            }
           }
+        }
+        break;
 
-          if (connected_p1 && connected_p2)
-          {
-            startupSequence();
+        case CommonlyStates::STARTUP_HELLO:
+        {
+          // print running "HALLO"
+          const uint8_t halLength = 5;
 
-            currentMode = Mode::COMMONLY;
-            currentState_common = CommonlyStates::WAITING;
-            currentShowMode = ShowMode::MODE1;
-          }
-          else if (!connected_p1)
+          if (millis() - prevTime_p1 >= 175)
           {
-            currentMode = Mode::COMMONLY;
-            currentState_common = CommonlyStates::ERROR;
-            currentError = Errors::NO_CONN_DISP_P1;
-            currentShowMode = ShowMode::MODE1;
-            clearTimeVariables();
-          }
+            prevTime_p1 = millis();
 
-          else if (!connected_p2)
-          {
-            currentMode = Mode::COMMONLY;
-            currentState_common = CommonlyStates::ERROR;
-            currentError = Errors::NO_CONN_DISP_P2;
-            currentShowMode = ShowMode::MODE1;
-            clearTimeVariables();
+            if (timeCount_p1 == 0)
+              for (uint8_t k = 0; k < 5; k++)
+                playerOne.digits[k] = playerTwo.digits[k] = 0;
+
+            else
+              for (uint8_t k = 0; k < 3; k++)
+                playerOne.digits[k] = playerTwo.digits[k] = playerOne.digits[k + 1];
+
+            if (timeCount_p1 < halLength)
+              playerOne.digits[3] = playerTwo.digits[3] = HALLO[timeCount_p1];
+
+            else if (timeCount_p1 < halLength + 4)
+              playerOne.digits[3] = playerTwo.digits[3] = 0;
+
+            else
+            {
+              currentState_common = CommonlyStates::WAITING;
+              clearTimeVariables_p1();
+              break;
+            }
+
+            timeCount_p1++;
           }
         }
         break;
@@ -318,27 +369,31 @@ inline void processCurrentState()
           // return error code
           // 11 - no connection to player_ones display
           // 22 - no connection to player_ones display
-          // 33 - accu warning
-          // 99 - accu critical
+          // ACCU - accu warning
 
           switch (currentError)
           {
             case Errors::NOTHING:
-              resetToScoreMode();
+              resetToPreviousMode();
               break;
 
             case Errors::NO_CONN_DISP_P1:
+            {
+              if (displayOneConnection)
+                resetToPreviousMode();
+            }
+            break;
             case Errors::NO_CONN_DISP_P2:
             {
-              // check connection
+              if (displayTwoConnection)
+                resetToPreviousMode();
             }
             break;
 
             case Errors::ACCU_WARN:
-            case Errors::ACCU_CRITCIAL:
             {
               if (timeCount_p1 > 10) // 5 sec, every 500ms count is incrementing
-                resetToScoreMode();
+                resetToPreviousMode();
             }
             break;
           }
@@ -348,12 +403,10 @@ inline void processCurrentState()
             showError(currentError, playerOne.digits, playerTwo.digits);
           else
           {
-            uint8_t errorMsg[5] = {0, 0, 0, 0, false};
+            uint8_t errorMsg[5]{};
+
             for (uint8_t i = 0; i < 5; i++)
-            {
-              playerOne.digits[i] = errorMsg[i];
-              playerTwo.digits[i] = errorMsg[i];
-            }
+              playerOne.digits[i] = playerTwo.digits[i] = errorMsg[i];
           }
 
           // switching
@@ -375,12 +428,10 @@ inline void processCurrentState()
   }
 }
 
-void resetToScoreMode()
+void resetToPreviousMode()
 {
-  currentMode = Mode::INDIVIDUAL;
-  playerOne.state = IndividualStates::SCORE;
-  playerTwo.state = IndividualStates::SCORE;
-
+  currentMode = prevMode;
+  currentState_common = prevState_common;
   clearTimeVariables();
 }
 

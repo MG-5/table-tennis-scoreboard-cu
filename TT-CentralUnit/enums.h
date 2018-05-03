@@ -9,7 +9,8 @@ enum class IndividualStates
 
 enum class CommonlyStates
 {
-  STARTUP,
+  STARTUP_SEQ,
+  STARTUP_HELLO,
   WAITING,
   RANKING,
   ERROR
@@ -39,8 +40,7 @@ enum class Errors
   NOTHING,
   NO_CONN_DISP_P1,
   NO_CONN_DISP_P2,
-  ACCU_WARN,
-  ACCU_CRITCIAL
+  ACCU_WARN
 };
 
 enum class ServesPlayer

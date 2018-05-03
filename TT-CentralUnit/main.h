@@ -17,7 +17,7 @@
 
 inline void processCurrentState();
 
-void resetToScoreMode();
+void resetToPreviousMode();
 
 void compareScores();
 
