@@ -21,6 +21,8 @@ void resetToPreviousMode();
 
 void compareScores();
 
+void updateServes(bool directionNormal);
+
 void clearTimeVariables_p1();
 
 void clearTimeVariables_p2();

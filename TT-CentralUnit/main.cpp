@@ -483,7 +483,7 @@ void updateServes(bool directionNormal)
       if (playerOne.getServes() == 5)
       {
         currentPlayer = ServesPlayer::PLAYERTWO;
-        playerTwo.refillServes();
+        playerTwo.incrementServes();
         playerOne.clearServes();
         playerOne.state = IndividualStates::SERVES;
         playerTwo.state = IndividualStates::SERVES;
@@ -511,7 +511,7 @@ void updateServes(bool directionNormal)
       if (playerTwo.getServes() == 5)
       {
         currentPlayer = ServesPlayer::PLAYERONE;
-        playerOne.refillServes();
+        playerOne.incrementServes();
         playerTwo.clearServes();
         playerOne.state = IndividualStates::SERVES;
         playerTwo.state = IndividualStates::SERVES;

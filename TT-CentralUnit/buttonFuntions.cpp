@@ -13,6 +13,7 @@ extern Player playerTwo;
 extern CommonlyStates currentState_common;
 extern Mode currentMode;
 extern ShowMode currentShowMode;
+extern ServesPlayer currentPlayer;
 
 uint32_t prevTimeBtn_p1 = 0;
 uint32_t prevTimeBtn_p2 = 0;
@@ -95,15 +96,16 @@ void checkForButtonUpdates(uint8_t interruptFlags)
 
 void playerOne_btn1_click()
 {
-  // debounce 2 sec
-  if (millis() - prevTimeBtn_p1 >= 2000 && currentMode == Mode::INDIVIDUAL &&
+  // 1 sec debounce
+  if (millis() - prevTimeBtn_p1 >= 1000 && currentMode == Mode::INDIVIDUAL &&
       playerOne.state == IndividualStates::SCORE)
   {
     prevTimeBtn_p1 = millis();
     alreadyDecremented_p1 = false;
     playerOne.incrementScore();
+    compareScores();
+    updateServes(true);
   }
-  compareScores();
 }
 
 void playerOne_btn1_longPressStart()
@@ -114,16 +116,17 @@ void playerOne_btn1_longPressStart()
     currentMode = Mode::INDIVIDUAL;
     playerOne.state = IndividualStates::SERVES;
     playerTwo.state = IndividualStates::SERVES;
+    currentPlayer = ServesPlayer::PLAYERONE;
     clearTimeVariables();
   }
   else if (currentMode == Mode::INDIVIDUAL && playerOne.state == IndividualStates::SCORE)
   {
     // only one decrement is prohibited
-    if (!alreadyDecremented_p1)
+    if (!alreadyDecremented_p1 && playerOne.getScore() != 0)
     {
       alreadyDecremented_p1 = true;
       playerOne.decrementScore();
-      compareScores();
+      updateServes(false);
     }
   }
 }
@@ -153,14 +156,15 @@ void playerOne_btn2_longPressStart()
 
 void playerTwo_btn1_click()
 {
-  // debounce 2 sec
-  if (millis() - prevTimeBtn_p2 >= 2000 && currentMode == Mode::INDIVIDUAL &&
+  // 1 sec debounce
+  if (millis() - prevTimeBtn_p2 >= 1000 && currentMode == Mode::INDIVIDUAL &&
       playerTwo.state == IndividualStates::SCORE)
   {
     prevTimeBtn_p2 = millis();
     alreadyDecremented_p2 = false;
     playerTwo.incrementScore();
     compareScores();
+    updateServes(true);
   }
 }
 
@@ -172,16 +176,17 @@ void playerTwo_btn1_longPressStart()
     currentMode = Mode::INDIVIDUAL;
     playerOne.state = IndividualStates::SERVES;
     playerTwo.state = IndividualStates::SERVES;
+    currentPlayer = ServesPlayer::PLAYERTWO;
     clearTimeVariables();
   }
   else if (currentMode == Mode::INDIVIDUAL && playerTwo.state == IndividualStates::SCORE)
   {
     // only one decrement is prohibited
-    if (!alreadyDecremented_p2)
+    if (!alreadyDecremented_p2 && playerTwo.getScore() != 0)
     {
       alreadyDecremented_p2 = true;
       playerTwo.decrementScore();
-      compareScores();
+      updateServes(false);
     }
   }
 }
