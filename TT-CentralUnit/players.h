@@ -7,7 +7,7 @@ class Player
 public:
   Player();
 
-  uint8_t getScore();
+  uint8_t getScore() const;
 
   uint8_t incrementScore();
 
@@ -15,7 +15,7 @@ public:
 
   void clearScore();
 
-  uint8_t getServes();
+  uint8_t getServes() const;
 
   uint8_t incrementServes();
 

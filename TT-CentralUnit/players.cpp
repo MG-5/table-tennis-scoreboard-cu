@@ -4,7 +4,7 @@ Player::Player()
 {
 }
 
-uint8_t Player::getScore()
+uint8_t Player::getScore() const
 {
   return score;
 }
@@ -30,7 +30,7 @@ void Player::clearScore()
   score = 0;
 }
 
-uint8_t Player::getServes()
+uint8_t Player::getServes() const
 {
 	return serves;
 }
