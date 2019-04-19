@@ -4,7 +4,7 @@ OneButton button_p1_1(&PINA, 1);
 OneButton button_p1_2(&PINA, 2);
 
 OneButton button_p2_1(&PINC, 0);
-OneButton button_p2_2(&PINA, 4);
+OneButton button_p2_2(&PINB, 3);
 
 OneButton button_cu_1(&PINA, 5);
 
@@ -133,8 +133,9 @@ void playerOne_btn1_longPressStart()
 
 void playerOne_btn2_click()
 {
-  clearTimeVariables_p1();
+  clearTimeVariables();
   playerOne.state = IndividualStates::SERVES;
+  playerTwo.state = IndividualStates::SERVES;
 }
 
 void playerOne_btn2_longPressStart()
@@ -145,6 +146,7 @@ void playerOne_btn2_longPressStart()
     currentMode = Mode::INDIVIDUAL;
     playerOne.state = IndividualStates::SERVES;
     playerTwo.state = IndividualStates::SERVES;
+    currentPlayer = ServesPlayer::PLAYERONE;
     clearTimeVariables();
   }
   else if (currentMode == Mode::INDIVIDUAL)
@@ -193,7 +195,8 @@ void playerTwo_btn1_longPressStart()
 
 void playerTwo_btn2_click()
 {
-  clearTimeVariables_p2();
+  clearTimeVariables();
+  playerOne.state = IndividualStates::SERVES;
   playerTwo.state = IndividualStates::SERVES;
 }
 
@@ -205,6 +208,7 @@ void playerTwo_btn2_longPressStart()
     currentMode = Mode::INDIVIDUAL;
     playerOne.state = IndividualStates::SERVES;
     playerTwo.state = IndividualStates::SERVES;
+    currentPlayer = ServesPlayer::PLAYERTWO;
     clearTimeVariables();
   }
   else if (currentMode == Mode::INDIVIDUAL)

@@ -36,14 +36,21 @@ Mode prevMode = Mode::COMMONLY;
 
 int main(void)
 {
+  // enable watch dog to enable ULP necessary for a working PB3
+  WDTCSR |= (1 << WDP3) | (1 << WDP0); // prescaler to 8.0s @5V
+  WDTCSR |= (1 << WDE);
+  asm("wdr"); //reset watch dog timer
+
   /**PullUp-Widerstaende**/
-  PUEA |= (1 << PUEA1) | (1 << PUEA2) | (1 << PUEA4) | (1 << PUEA5);
+  PUEA |= (1 << PUEA1) | (1 << PUEA2) | (1 << PUEA5);
+  PUEB |= (1 << PUEB3);
   PUEC |= (1 << PUEC0);
 
   /******Interrupts*******/
-  GIMSK |= (1 << PCIE0) | (1 << PCIE2);                                    // enable PCINT0 & PCINT2
-  PCMSK0 |= (1 << PCINT2) | (1 << PCINT1) | (1 << PCINT4) | (1 << PCINT5); // A1 & A2 & A4 & A5 // mask B3
-  PCMSK2 |= (1 << PCINT12);                                                // mask C0
+  GIMSK |= (1 << PCIE0) | (1 << PCIE1) | (1 << PCIE2);     // enable PCINT0 & PCINT1 & PCINT2
+  PCMSK0 |= (1 << PCINT1) | (1 << PCINT2) | (1 << PCINT5); // A1 & A2 & A5
+  PCMSK1 |= (1 << PCINT11);                                // mask B3
+  PCMSK2 |= (1 << PCINT12);                                // mask C0
 
   /* Button - associated functions */
   buttons_init();
@@ -58,6 +65,8 @@ int main(void)
   sei();
 
   uint32_t prevTime = 0;
+  uint32_t prevTime2 = 0;
+  bool blink = false;
 
   // wait for displays starting
   wait_ms(50);
@@ -67,20 +76,16 @@ int main(void)
   {
     checkForButtonUpdates(interruptFlags);
 
-    // clang-format off
-	/*
     if (millis() - prevTime2 >= 1000)
     {
-      test = !test;
+      blink = !blink;
       prevTime2 = millis();
 
-      if (test)
+      if (blink)
         PORTC |= LED_PIN;
       else
         PORTC &= ~LED_PIN;
     }
-	*/
-    // clang-format on
 
     processCurrentState();
 
@@ -132,6 +137,8 @@ int main(void)
       currentShowMode = ShowMode::MODE1;
       clearTimeVariables();
     }
+	
+	asm("wdr"); //reset watch dog timer
   }
 }
 
@@ -622,15 +629,19 @@ ISR(PCINT0_vect)
     toggle_bit(buttonStates, 1);
     set_bit(interruptFlags, 1);
   }
-  else if (check_bit(PINA, 4) != check_bit(buttonStates, 3))
-  {
-    toggle_bit(buttonStates, 3);
-    set_bit(interruptFlags, 3);
-  }
   else if (check_bit(PINA, 5) != check_bit(buttonStates, 4))
   {
     toggle_bit(buttonStates, 4);
     set_bit(interruptFlags, 4);
+  }
+}
+
+ISR(PCINT1_vect)
+{
+  if (check_bit(PINB, 3) != check_bit(buttonStates, 3))
+  {
+    toggle_bit(buttonStates, 3);
+    set_bit(interruptFlags, 3);
   }
 }
 
