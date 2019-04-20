@@ -40,7 +40,7 @@ enum class Errors
   NOTHING,
   NO_CONN_DISP_P1,
   NO_CONN_DISP_P2,
-  ACCU_WARN
+  BATTERY_LOW_WARNING
 };
 
 enum class ServesPlayer
@@ -49,3 +49,13 @@ enum class ServesPlayer
   PLAYERONE,
   PLAYERTWO
 };
+
+enum class Tone
+{
+	NONE,
+	GAME_START,
+	BUTTON_ACK,
+	SERVES_CHANGE,
+	GAME_END,
+	BATTERY_LOW_WARNING
+	};

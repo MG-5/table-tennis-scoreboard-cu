@@ -15,6 +15,9 @@ extern Mode currentMode;
 extern ShowMode currentShowMode;
 extern ServesPlayer currentPlayer;
 
+extern bool playATone;
+extern Tone currentTone;
+
 uint32_t prevTimeBtn_p1 = 0;
 uint32_t prevTimeBtn_p2 = 0;
 
@@ -103,8 +106,12 @@ void playerOne_btn1_click()
     prevTimeBtn_p1 = millis();
     alreadyDecremented_p1 = false;
     playerOne.incrementScore();
-    compareScores();
+
+    playATone = true;
+    currentTone = Tone::BUTTON_ACK;
+
     updateServes(true);
+    compareScores();
   }
 }
 
@@ -118,6 +125,9 @@ void playerOne_btn1_longPressStart()
     playerTwo.state = IndividualStates::SERVES;
     currentPlayer = ServesPlayer::PLAYERONE;
     clearTimeVariables();
+
+    playATone = true;
+    currentTone = Tone::SERVES_CHANGE;
   }
   else if (currentMode == Mode::INDIVIDUAL && playerOne.state == IndividualStates::SCORE)
   {
@@ -126,6 +136,10 @@ void playerOne_btn1_longPressStart()
     {
       alreadyDecremented_p1 = true;
       playerOne.decrementScore();
+
+      playATone = true;
+      currentTone = Tone::BUTTON_ACK;
+
       updateServes(false);
     }
   }
@@ -148,6 +162,9 @@ void playerOne_btn2_longPressStart()
     playerTwo.state = IndividualStates::SERVES;
     currentPlayer = ServesPlayer::PLAYERONE;
     clearTimeVariables();
+
+    playATone = true;
+    currentTone = Tone::SERVES_CHANGE;
   }
   else if (currentMode == Mode::INDIVIDUAL)
   {
@@ -165,8 +182,12 @@ void playerTwo_btn1_click()
     prevTimeBtn_p2 = millis();
     alreadyDecremented_p2 = false;
     playerTwo.incrementScore();
-    compareScores();
+
+    playATone = true;
+    currentTone = Tone::BUTTON_ACK;
+
     updateServes(true);
+    compareScores();
   }
 }
 
@@ -180,6 +201,9 @@ void playerTwo_btn1_longPressStart()
     playerTwo.state = IndividualStates::SERVES;
     currentPlayer = ServesPlayer::PLAYERTWO;
     clearTimeVariables();
+
+    playATone = true;
+    currentTone = Tone::SERVES_CHANGE;
   }
   else if (currentMode == Mode::INDIVIDUAL && playerTwo.state == IndividualStates::SCORE)
   {
@@ -188,6 +212,10 @@ void playerTwo_btn1_longPressStart()
     {
       alreadyDecremented_p2 = true;
       playerTwo.decrementScore();
+
+      playATone = true;
+      currentTone = Tone::BUTTON_ACK;
+	  
       updateServes(false);
     }
   }
@@ -210,6 +238,9 @@ void playerTwo_btn2_longPressStart()
     playerTwo.state = IndividualStates::SERVES;
     currentPlayer = ServesPlayer::PLAYERTWO;
     clearTimeVariables();
+
+    playATone = true;
+    currentTone = Tone::SERVES_CHANGE;
   }
   else if (currentMode == Mode::INDIVIDUAL)
   {
@@ -234,4 +265,7 @@ void centralUnit_btn1_longPressStart()
   currentMode = Mode::COMMONLY;
   currentState_common = CommonlyStates::WAITING;
   currentShowMode = ShowMode::MODE1;
+
+  playATone = true;
+  currentTone = Tone::GAME_START;
 }

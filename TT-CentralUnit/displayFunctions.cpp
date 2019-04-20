@@ -83,7 +83,7 @@ void showError(Errors error, uint8_t (&p1)[5], uint8_t (&p2)[5])
       errorMsg[2] = errorMsg[3] = digitToSegment[2];
       break;
 
-    case Errors::ACCU_WARN:
+    case Errors::BATTERY_LOW_WARNING:
     {
       errorMsg[0] = digitToSegment[0xA];
       errorMsg[1] = digitToSegment[0xC];

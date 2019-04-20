@@ -1,7 +1,10 @@
 #pragma once
 
 #define UART_BAUD 1000000UL
-#define LED_PIN (1 << PINC2)
+#define LED_PIN PINC2
+
+#define PIEZO_PORT PORTA
+#define PIEZO_PIN PINA4
 #define TEMP_CHANNEL 0
 
 #define RQ_CODE 0xC2

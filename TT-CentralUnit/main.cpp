@@ -30,6 +30,9 @@ Ranks currentRank = Ranks::NOBODY;
 ShowMode currentShowMode = ShowMode::MODE1;
 ServesPlayer currentPlayer = ServesPlayer::NOBODY;
 
+bool playATone = true;
+Tone currentTone = Tone::GAME_START;
+
 // previous states
 CommonlyStates prevState_common = CommonlyStates::STARTUP_SEQ;
 Mode prevMode = Mode::COMMONLY;
@@ -39,7 +42,7 @@ int main(void)
   // enable watch dog to enable ULP necessary for a working PB3
   WDTCSR |= (1 << WDP3) | (1 << WDP0); // prescaler to 8.0s @5V
   WDTCSR |= (1 << WDE);
-  asm("wdr"); //reset watch dog timer
+  asm("wdr"); // reset watch dog timer
 
   /**PullUp-Widerstaende**/
   PUEA |= (1 << PUEA1) | (1 << PUEA2) | (1 << PUEA5);
@@ -55,7 +58,8 @@ int main(void)
   /* Button - associated functions */
   buttons_init();
 
-  DDRC |= LED_PIN;
+  DDRA |= (1 << PIEZO_PIN);
+  DDRC |= (1 << LED_PIN);
 
   timer0_init();
   uart_init(UART_BAUD_SELECT_DOUBLE_SPEED(UART_BAUD, F_CPU));
@@ -64,8 +68,9 @@ int main(void)
 
   sei();
 
-  uint32_t prevTime = 0;
-  uint32_t prevTime2 = 0;
+  uint32_t prevTimeDisplay = 0;
+  uint32_t prevTimeBlink = 0;
+  uint32_t prevTimeTone = 0;
   bool blink = false;
 
   // wait for displays starting
@@ -76,23 +81,23 @@ int main(void)
   {
     checkForButtonUpdates(interruptFlags);
 
-    if (millis() - prevTime2 >= 1000)
+    if (millis() - prevTimeBlink >= 1000)
     {
       blink = !blink;
-      prevTime2 = millis();
+      prevTimeBlink = millis();
 
       if (blink)
-        PORTC |= LED_PIN;
+        PORTC |= (1 << LED_PIN);
       else
-        PORTC &= ~LED_PIN;
+        PORTC &= ~(1 << LED_PIN);
     }
 
     processCurrentState();
 
     // 100Hz update rate
-    if (millis() - prevTime >= 10)
+    if (millis() - prevTimeDisplay >= 10)
     {
-      prevTime = millis();
+      prevTimeDisplay = millis();
 
       updateDisplayOne();
       updateDisplayTwo();
@@ -137,8 +142,203 @@ int main(void)
       currentShowMode = ShowMode::MODE1;
       clearTimeVariables();
     }
-	
-	asm("wdr"); //reset watch dog timer
+
+    asm("wdr"); // reset watch dog timer
+
+    if (playATone)
+    {
+      static uint8_t toneIndex = 0;
+      switch (currentTone)
+      {
+        case Tone::NONE:
+        default:
+          playATone = false;
+          break;
+
+        case Tone::GAME_START:
+          if (toneIndex == 0)
+          {
+            PIEZO_PORT |= (1 << PIEZO_PIN);
+            toneIndex = 1;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 1 && millis() - prevTimeTone >= 75)
+          {
+            PIEZO_PORT &= ~(1 << PIEZO_PIN);
+            toneIndex = 2;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 2 && millis() - prevTimeTone >= 100)
+          {
+            PIEZO_PORT |= (1 << PIEZO_PIN);
+            toneIndex = 3;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 3 && millis() - prevTimeTone >= 75)
+          {
+            PIEZO_PORT &= ~(1 << PIEZO_PIN);
+            toneIndex = 4;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 4 && millis() - prevTimeTone >= 100)
+          {
+            PIEZO_PORT |= (1 << PIEZO_PIN);
+            toneIndex = 5;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 5 && millis() - prevTimeTone >= 400)
+          {
+            PIEZO_PORT &= ~(1 << PIEZO_PIN);
+            toneIndex = 0;
+            playATone = false;
+          }
+          break;
+
+        case Tone::BUTTON_ACK:
+          if (toneIndex == 0)
+          {
+            PIEZO_PORT |= (1 << PIEZO_PIN);
+            toneIndex = 1;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 1 && millis() - prevTimeTone >= 50)
+          {
+            PIEZO_PORT &= ~(1 << PIEZO_PIN);
+            toneIndex = 0;
+            playATone = false;
+          }
+          break;
+
+        case Tone::SERVES_CHANGE:
+          if (toneIndex == 0)
+          {
+            PIEZO_PORT |= (1 << PIEZO_PIN);
+            toneIndex = 1;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 1 && millis() - prevTimeTone >= 50)
+          {
+            PIEZO_PORT &= ~(1 << PIEZO_PIN);
+            toneIndex = 2;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 2 && millis() - prevTimeTone >= 150)
+          {
+            PIEZO_PORT |= (1 << PIEZO_PIN);
+            toneIndex = 3;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 3 && millis() - prevTimeTone >= 400)
+          {
+            PIEZO_PORT &= ~(1 << PIEZO_PIN);
+            toneIndex = 0;
+            playATone = false;
+          }
+          break;
+
+        case Tone::GAME_END:
+          if (toneIndex == 0)
+          {
+            PIEZO_PORT |= (1 << PIEZO_PIN);
+            toneIndex = 1;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 1 && millis() - prevTimeTone >= 400)
+          {
+            PIEZO_PORT &= ~(1 << PIEZO_PIN);
+            toneIndex = 2;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 2 && millis() - prevTimeTone >= 100)
+          {
+            PIEZO_PORT |= (1 << PIEZO_PIN);
+            toneIndex = 3;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 3 && millis() - prevTimeTone >= 100)
+          {
+            PIEZO_PORT &= ~(1 << PIEZO_PIN);
+            toneIndex = 4;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 4 && millis() - prevTimeTone >= 100)
+          {
+            PIEZO_PORT |= (1 << PIEZO_PIN);
+            toneIndex = 5;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 5 && millis() - prevTimeTone >= 100)
+          {
+            PIEZO_PORT &= ~(1 << PIEZO_PIN);
+            toneIndex = 6;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 6 && millis() - prevTimeTone >= 100)
+          {
+            PIEZO_PORT |= (1 << PIEZO_PIN);
+            toneIndex = 7;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 7 && millis() - prevTimeTone >= 700)
+          {
+            PIEZO_PORT &= ~(1 << PIEZO_PIN);
+            toneIndex = 0;
+            playATone = false;
+          }
+          break;
+
+        case Tone::BATTERY_LOW_WARNING:
+          if (toneIndex == 0)
+          {
+            PIEZO_PORT |= (1 << PIEZO_PIN);
+            toneIndex = 1;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 1 && millis() - prevTimeTone >= 400)
+          {
+            PIEZO_PORT &= ~(1 << PIEZO_PIN);
+            toneIndex = 2;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 2 && millis() - prevTimeTone >= 100)
+          {
+            PIEZO_PORT |= (1 << PIEZO_PIN);
+            toneIndex = 3;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 3 && millis() - prevTimeTone >= 400)
+          {
+            PIEZO_PORT &= ~(1 << PIEZO_PIN);
+            toneIndex = 4;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 4 && millis() - prevTimeTone >= 100)
+          {
+            PIEZO_PORT |= (1 << PIEZO_PIN);
+            toneIndex = 5;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 5 && millis() - prevTimeTone >= 400)
+          {
+            PIEZO_PORT &= ~(1 << PIEZO_PIN);
+            toneIndex = 6;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 6 && millis() - prevTimeTone >= 100)
+          {
+            PIEZO_PORT |= (1 << PIEZO_PIN);
+            toneIndex = 7;
+            prevTimeTone = millis();
+          }
+          else if (toneIndex == 7 && millis() - prevTimeTone >= 1000)
+          {
+            PIEZO_PORT &= ~(1 << PIEZO_PIN);
+            toneIndex = 0;
+            playATone = false;
+          }
+          break;
+      }
+    }
   }
 }
 
@@ -397,7 +597,7 @@ inline void processCurrentState()
             }
             break;
 
-            case Errors::ACCU_WARN:
+            case Errors::BATTERY_LOW_WARNING:
             {
               if (timeCount_p1 > 10) // 5 sec, every 500ms count is incrementing
                 resetToPreviousMode();
@@ -456,6 +656,9 @@ void compareScores()
       currentState_common = CommonlyStates::RANKING;
       currentShowMode = ShowMode::MODE1;
       clearTimeVariables();
+	  
+	  playATone=true;
+	  currentTone=Tone::GAME_END;
       return;
     }
     else if (p2 >= 21 && p2 > p1)
@@ -465,6 +668,9 @@ void compareScores()
       currentState_common = CommonlyStates::RANKING;
       currentShowMode = ShowMode::MODE1;
       clearTimeVariables();
+	  
+	  playATone=true;
+	  currentTone=Tone::GAME_END;
       return;
     }
   }
@@ -483,6 +689,9 @@ void updateServes(bool directionNormal)
         playerOne.state = IndividualStates::SERVES;
         playerTwo.state = IndividualStates::SERVES;
         clearTimeVariables();
+
+        playATone = true;
+        currentTone = Tone::SERVES_CHANGE;
       }
     }
     else
@@ -495,6 +704,9 @@ void updateServes(bool directionNormal)
         playerOne.state = IndividualStates::SERVES;
         playerTwo.state = IndividualStates::SERVES;
         clearTimeVariables();
+
+        playATone = true;
+        currentTone = Tone::SERVES_CHANGE;
       }
       else
         playerOne.incrementServes();
@@ -511,6 +723,9 @@ void updateServes(bool directionNormal)
         playerOne.state = IndividualStates::SERVES;
         playerTwo.state = IndividualStates::SERVES;
         clearTimeVariables();
+
+        playATone = true;
+        currentTone = Tone::SERVES_CHANGE;
       }
     }
     else
@@ -523,6 +738,9 @@ void updateServes(bool directionNormal)
         playerOne.state = IndividualStates::SERVES;
         playerTwo.state = IndividualStates::SERVES;
         clearTimeVariables();
+
+        playATone = true;
+        currentTone = Tone::SERVES_CHANGE;
       }
       else
         playerTwo.incrementServes();
