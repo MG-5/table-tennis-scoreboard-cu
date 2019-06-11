@@ -14,6 +14,7 @@ extern CommonlyStates currentState_common;
 extern Mode currentMode;
 extern ShowMode currentShowMode;
 extern ServesPlayer currentPlayer;
+extern Ranks currentRank;
 
 extern bool playATone;
 extern Tone currentTone;
@@ -154,17 +155,22 @@ void playerOne_btn2_click()
 
 void playerOne_btn2_longPressStart()
 {
-  if (currentMode == Mode::COMMONLY && currentState_common == CommonlyStates::WAITING)
+  if (currentMode == Mode::COMMONLY)
   {
-    playerOne.refillServes();
-    currentMode = Mode::INDIVIDUAL;
-    playerOne.state = IndividualStates::SERVES;
-    playerTwo.state = IndividualStates::SERVES;
-    currentPlayer = ServesPlayer::PLAYERONE;
-    clearTimeVariables();
+    if (currentState_common == CommonlyStates::WAITING)
+    {
+      playerOne.refillServes();
+      currentMode = Mode::INDIVIDUAL;
+      playerOne.state = IndividualStates::SERVES;
+      playerTwo.state = IndividualStates::SERVES;
+      currentPlayer = ServesPlayer::PLAYERONE;
+      clearTimeVariables();
 
-    playATone = true;
-    currentTone = Tone::SERVES_CHANGE;
+      playATone = true;
+      currentTone = Tone::SERVES_CHANGE;
+    }
+    else if (currentState_common == CommonlyStates::RANKING)
+      restartGame();
   }
   else if (currentMode == Mode::INDIVIDUAL)
   {
@@ -215,7 +221,7 @@ void playerTwo_btn1_longPressStart()
 
       playATone = true;
       currentTone = Tone::BUTTON_ACK;
-	  
+
       updateServes(false);
     }
   }
@@ -230,17 +236,22 @@ void playerTwo_btn2_click()
 
 void playerTwo_btn2_longPressStart()
 {
-  if (currentMode == Mode::COMMONLY && currentState_common == CommonlyStates::WAITING)
+  if (currentMode == Mode::COMMONLY)
   {
-    playerTwo.refillServes();
-    currentMode = Mode::INDIVIDUAL;
-    playerOne.state = IndividualStates::SERVES;
-    playerTwo.state = IndividualStates::SERVES;
-    currentPlayer = ServesPlayer::PLAYERTWO;
-    clearTimeVariables();
+    if (currentState_common == CommonlyStates::WAITING)
+    {
+      playerTwo.refillServes();
+      currentMode = Mode::INDIVIDUAL;
+      playerOne.state = IndividualStates::SERVES;
+      playerTwo.state = IndividualStates::SERVES;
+      currentPlayer = ServesPlayer::PLAYERTWO;
+      clearTimeVariables();
 
-    playATone = true;
-    currentTone = Tone::SERVES_CHANGE;
+      playATone = true;
+      currentTone = Tone::SERVES_CHANGE;
+    }
+    else if (currentState_common == CommonlyStates::RANKING)
+      restartGame();
   }
   else if (currentMode == Mode::INDIVIDUAL)
   {
@@ -256,6 +267,11 @@ void centralUnit_btn1_click()
 
 void centralUnit_btn1_longPressStart()
 {
+  restartGame();
+}
+
+void restartGame()
+{
   playerOne.clearScore();
   playerOne.clearServes();
 
@@ -265,6 +281,8 @@ void centralUnit_btn1_longPressStart()
   currentMode = Mode::COMMONLY;
   currentState_common = CommonlyStates::WAITING;
   currentShowMode = ShowMode::MODE1;
+  currentPlayer = ServesPlayer::NOBODY;
+  currentRank = Ranks::NOBODY;
 
   playATone = true;
   currentTone = Tone::GAME_START;
