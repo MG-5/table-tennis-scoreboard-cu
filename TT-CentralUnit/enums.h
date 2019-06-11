@@ -13,7 +13,8 @@ enum class CommonlyStates
   STARTUP_HELLO,
   WAITING,
   RANKING,
-  ERROR
+  ERROR,
+  BATTERY_VOLTAGE
 };
 
 enum class Mode

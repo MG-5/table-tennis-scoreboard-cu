@@ -262,7 +262,9 @@ void playerTwo_btn2_longPressStart()
 
 void centralUnit_btn1_click()
 {
-  // TODO: show accu voltage
+  currentMode = Mode::COMMONLY;
+  currentState_common = CommonlyStates::BATTERY_VOLTAGE;
+  clearTimeVariables();
 }
 
 void centralUnit_btn1_longPressStart()

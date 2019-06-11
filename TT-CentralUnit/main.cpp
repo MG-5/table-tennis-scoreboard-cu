@@ -33,6 +33,9 @@ ServesPlayer currentPlayer = ServesPlayer::NOBODY;
 bool playATone = true;
 Tone currentTone = Tone::GAME_START;
 
+uint16_t bat_voltage; // in mV
+bool warned = false;
+
 // previous states
 CommonlyStates prevState_common = CommonlyStates::STARTUP_SEQ;
 Mode prevMode = Mode::COMMONLY;
@@ -90,6 +93,37 @@ int main(void)
         PORTC |= (1 << LED_PIN);
       else
         PORTC &= ~(1 << LED_PIN);
+
+      uint32_t bat_adc = ADC_read_avg(BAT_CHANNEL, 16); // battery voltage measurement
+      static uint32_t bat_adc_prev = 0;
+
+      if (bat_adc_prev == 0)
+        bat_adc_prev = bat_adc;
+
+      if (abs(bat_adc - bat_adc_prev) > 2)
+      {
+        bat_adc_prev += bat_adc;
+        bat_adc_prev /= 2;
+      }
+
+      static const uint32_t vref = 5070;
+      static const double vlt_divider = 14700 / 4700;
+      static const double offset = 400;
+
+      bat_voltage = bat_adc_prev * vref * vlt_divider / 1023 + offset;
+
+      if (bat_voltage <= BAT_LOW_THRESHOLD && !warned)
+      {
+        warned = true;
+        prevMode = currentMode;
+        prevState_common = currentState_common;
+
+        currentMode = Mode::COMMONLY;
+        currentState_common = CommonlyStates::ERROR;
+        currentError = Errors::BATTERY_LOW_WARNING;
+        currentShowMode = ShowMode::MODE1;
+        clearTimeVariables();
+      }
     }
 
     processCurrentState();
@@ -515,7 +549,7 @@ inline void processCurrentState()
           }
 
           // blinking
-          if ((millis() - prevTime_p1) >= 500)
+          if ((millis() - prevTime_p1) >= 600)
           {
             prevTime_p1 = millis();
 
@@ -576,7 +610,7 @@ inline void processCurrentState()
           // return error code
           // 11 - no connection to player_ones display
           // 22 - no connection to player_ones display
-          // ACCU - accu warning
+          // ACCU - battery low warning
 
           switch (currentError)
           {
@@ -629,6 +663,22 @@ inline void processCurrentState()
           }
         }
         break;
+        case CommonlyStates::BATTERY_VOLTAGE:
+        {
+          showVoltage(bat_voltage, playerOne.digits, playerTwo.digits);
+
+          if ((millis() - prevTime_p1) >= 1000)
+          {
+            prevTime_p1 = millis();
+
+            if (++timeCount_p1 > 3)
+            {
+              currentMode = Mode::INDIVIDUAL;
+              playerOne.state = playerTwo.state = IndividualStates::SCORE;
+            }
+          }
+        }
+        break;
       }
     }
     break;
@@ -656,9 +706,9 @@ void compareScores()
       currentState_common = CommonlyStates::RANKING;
       currentShowMode = ShowMode::MODE1;
       clearTimeVariables();
-	  
-	  playATone=true;
-	  currentTone=Tone::GAME_END;
+
+      playATone = true;
+      currentTone = Tone::GAME_END;
       return;
     }
     else if (p2 >= 21 && p2 > p1)
@@ -668,9 +718,9 @@ void compareScores()
       currentState_common = CommonlyStates::RANKING;
       currentShowMode = ShowMode::MODE1;
       clearTimeVariables();
-	  
-	  playATone=true;
-	  currentTone=Tone::GAME_END;
+
+      playATone = true;
+      currentTone = Tone::GAME_END;
       return;
     }
   }

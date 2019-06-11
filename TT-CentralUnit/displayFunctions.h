@@ -34,3 +34,5 @@ void showServes(bool myself, uint8_t serves, uint8_t (&digits)[5]);
 void showTemp(uint8_t (&digits)[5]);
 
 void showError(Errors error, uint8_t (&p1)[5], uint8_t (&p2)[5]);
+
+void showVoltage(uint16_t voltage,uint8_t (&p1)[5], uint8_t (&p2)[5]);

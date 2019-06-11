@@ -88,11 +88,24 @@ void showError(Errors error, uint8_t (&p1)[5], uint8_t (&p2)[5])
       errorMsg[0] = digitToSegment[0xA];
       errorMsg[1] = digitToSegment[0xC];
       errorMsg[2] = digitToSegment[0xC];
-      errorMsg[3] = 62; //U
+      errorMsg[3] = 62; // U
     }
     break;
   }
 
   for (uint8_t i = 0; i < 5; i++)
     p1[i] = p2[i] = errorMsg[i];
+}
+
+void showVoltage(uint16_t voltage, uint8_t (&p1)[5], uint8_t (&p2)[5])
+{
+  float tmp = voltage;
+  tmp /= 10.0f;
+  uint16_t tmp2 = round(tmp);
+
+  p1[0] = p2[0] = 0;
+  p1[1] = p2[1] = digitToSegment[tmp2 / 100 % 10] + 128;
+  p1[2] = p2[2] = digitToSegment[tmp2 / 10 % 10];
+  p1[3] = p2[3] = digitToSegment[tmp2 % 10];
+  p1[4] = p2[4] = false;
 }
