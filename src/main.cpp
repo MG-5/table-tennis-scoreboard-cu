@@ -851,7 +851,7 @@ uint16_t ADC_read(uint8_t channel)
   {
   }
 
-  return ADCW; // ADC auslesen und zurückgeben
+  return ADCW; // ADC auslesen und zurï¿½ckgeben
 }
 
 /* ADC Mehrfachmessung mit Mittelwertbbildung */
