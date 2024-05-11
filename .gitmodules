@@ -1,3 +1,3 @@
 [submodule "TT-CentralUnit/common"]
-	path = TT-CentralUnit/common
+	path = src/common
 	url = git@github.com:MG-5/common-stuff-avr.git
